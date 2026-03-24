@@ -209,4 +209,6 @@ __marimo__/
 
 # Helix Bot — local only
 *.log
-notes.md
+PLAN.md
+example_guide/
+stage1.ipynb
