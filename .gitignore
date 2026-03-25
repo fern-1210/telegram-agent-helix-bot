@@ -211,8 +211,7 @@ __marimo__/
 *.log
 PLAN.md
 example_guide/
-stage1.ipynb
-stage2.ipynb
+# Stage learning notebooks (under example_guide; adjust if you track example_guide in git)
+example_guide/stage_workbooks/stage*.ipynb
 
 
-stage1_bot.py
