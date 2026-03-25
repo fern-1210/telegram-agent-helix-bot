@@ -90,7 +90,8 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return
 
     uptime = _format_uptime(time.time() - START_TIME)
-    user = update.effective_user
+    user = update.effective_user                        #this can be a problem for security as it shows the user id to all users
+
 
     await update.message.reply_text(
         f"📊 Bot Status\n\n"
