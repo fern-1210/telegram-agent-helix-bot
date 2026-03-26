@@ -7,7 +7,7 @@ from typing import Any
 
 from app.infra import config
 
-
+# enforces a sliding window on conversation history
 def trim_messages(messages: list[dict[str, str]]) -> list[dict[str, str]]:
     if len(messages) <= config.MAX_HISTORY_MESSAGES:
         return messages
@@ -21,7 +21,7 @@ def assistant_text_from_response(response: object) -> str:
             parts.append(block.text)
     return "".join(parts).strip() or "(No text in response.)"
 
-
+# background async task that sends a "typing..." indicator to Telegram every 4 seconds 
 async def keep_typing(chat: object) -> None:
     try:
         while True:
