@@ -72,24 +72,30 @@ ALLOWED_TELEGRAM_USER_IDS=123456789,987654321
 ANTHROPIC_API_KEY=your_key
 PINECONE_API_KEY=your_key
 TAVILY_API_KEY=your_key
+OPENAI_API_KEY=your_key
 ```
 5. Deploy complete 🚀 Railway handles scaling, restarts, and secrets.
 [→ Full Railway Deployment Guide](docs/deployment/railway.md)
 
 
-## 💰 Cost Breakdown
-| Service           | Free Tier        | Production Cost    |
-| ----------------- | --------------- | ------------------ |
-| Telegram          | Free             | Free               |
-| Anthropic (Haiku) | Pay‑per‑token    | ~$0.01/conv        |
-| Pinecone          | 2GB free         | Free (starter)     |
-| Tavily            | 1k searches/mo   | Free               |
-| Railway           | $5/mo credit     | ~$5/mo hobby       |
-
-Pro tip: Set Anthropic spend limit in console before deploying.
 
 
-🧪 Operator Commands
+## 📊 Example Cost Table by Usage Tier
+
+| Tier              | Messages / Day | Messages / Week | Messages / Month | LLM (Claude) | Embeddings + Pinecone | Tavily          | Railway | Est. Total / Month | Typical Scenario                                 |
+|-------------------|:--------------:|:---------------:|:----------------:|:-------------|:----------------------|:----------------|:-------:|:-------------------:|:-------------------------------------------------|
+| **1. Tiny Hobby** | ~10            | ~70             | ~300             | ≈ $1–2       | ≈ $0 (embeds) + $0 (free) | $0 (few calls, in free) | $1–5   | $2–7               | Playing with Helix a few times a day.            |
+| **2. Light Daily**| ~50            | ~350            | ~1,500           | ≈ $5–10      | <$0.20 + $0           | $0–5            | ~$5     | $10–20             | Two users chatting daily, planning events.        |
+| **3. Medium Personal** | ~150       | ~1,000          | ~4,500           | ≈ $20–35     | <$0.50 + $0–5         | $5–10           | ~$5     | $30–55             | Heavy personal use: notes, planning, Berlin recs. |
+
+Pro tip: Set Anthropic & Open AI spend limit in console before deploying.
+
+_These estimates are illustrative (March 2025) and may vary with LLM/token prices, Pinecone/Tavily quotas, and usage patterns. See individual service dashboards for precise billing._
+
+
+
+
+## 🧪 Operator Commands
 Send these to the bot (whitelisted users only):
 ```bash
 /status     # Bot uptime, memory usage, token spend
@@ -97,6 +103,7 @@ Send these to the bot (whitelisted users only):
 /reset      # Clear conversation window (debug)
 /memory     # Show recent memories (debug)
 ```
+
 
 
 ## Security & Privacy Model
@@ -116,3 +123,19 @@ Helix is built with a privacy‑first mindset:
 - **Prompt‑injection aware**: The system prompt is explicitly written to instruct Claude to keep its identity and rules intact, refuse to reveal system prompts, and ignore attempts to override system instructions.
 
 
+
+## About the Builder
+
+Julian Fernandes — Berlin-based data analyst and CRM specialist.  
+[LinkedIn](https://www.linkedin.com/in/julian-fernandes-a1a19ba/)
+
+I didn’t finish a 12‑week data bootcamp and file the certificate away — I built Helix as a sandbox for testing, breaking, and iterating on everything I’ve learned. This project is my way of turning curiosity into shipping: a private, Berlin‑tuned Telegram agent that I can poke, refine, and reshape until it genuinely fits into my daily life.
+
+My background in CRM and customer data means I care less about shiny tech and more about actionable change: does this actually help me and Miss X decide faster, plan better, and discover more? Helix is that philosophy in code — a living experiment where I use AI as a thinking partner, use each iteration as a lesson, and keep pushing the system toward something small, focused, and genuinely useful.
+
+
+## License
+
+MIT — use it, adapt it, build on it.
+
+If you end up using this as a base for your own bot or product, a quick mention or a ⭐ on the repo would make my day.
