@@ -38,6 +38,8 @@ def main() -> None:
             "Whitelisted user id(s) have no profile env mapping: %s",
             sorted(unbound),
         )
+    if config.ALLOWED_TELEGRAM_GROUP_IDS:
+        log.info("Group mode enabled for chat_ids=%s", sorted(config.ALLOWED_TELEGRAM_GROUP_IDS))
      # 🎮 Build the Telegram application — control center for all updates
     application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
 
@@ -52,7 +54,7 @@ def main() -> None:
     application.add_handler(CommandHandler("memory_list", commands.memory_list_command))  # 📊 ids + kind + created_at (metadata)
     application.add_handler(CommandHandler("memory_debug", commands.memory_debug_command))  # 🔍 same + summary text (private)
     application.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.claude_reply),
+        MessageHandler((filters.TEXT | filters.CAPTION) & ~filters.COMMAND, handlers.claude_reply),
     )
     application.add_error_handler(handlers.on_error) # 🚨 last-resort errors (no message body in logs)
 

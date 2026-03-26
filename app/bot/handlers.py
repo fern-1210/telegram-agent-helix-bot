@@ -3,67 +3,145 @@
 from __future__ import annotations
 
 import asyncio
+import json
+from typing import Any
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from app.ai import claude
 from app.ai import memory
+from app.ai.tavily_search import tavily_search
 from app.bot import access
 from app.infra import config
 from app.infra.logging import get_logger
 
 log = get_logger("helix")
 
+_TAVILY_TOOL_DEF: dict[str, Any] = {
+    "name": "tavily_search",
+    "description": (
+        "Search current web information when the user asks for up-to-date events, "
+        "news, listings, or time-sensitive recommendations."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "query": {"type": "string"},
+        },
+        "required": ["query"],
+    },
+}
+
 
 async def claude_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not update.message or not update.message.text:
+    if not update.message:
+        return
+    user_text = (update.message.text or update.message.caption or "").strip()
+    if not user_text:
         return
     if not access.is_allowed(update):
         return
+    # check if the message is in a group chat and if the bot is mentioned
+    chat = update.effective_chat
+    if chat is not None and chat.type != "private":
+        bot_user = await context.bot.get_me()
+        bot_username = bot_user.username or ""
+        should_reply = access.should_reply_to_group_message(update, bot_username, bot_user.id)
+        if not should_reply:
+            entities = [(e.type, e.offset, e.length) for e in (update.message.entities or [])]
+            log.info(
+                "Group message ignored chat_id=%s user_id=%s text=%r entities=%s bot_username=%s bot_id=%s",
+                chat.id,
+                update.effective_user.id if update.effective_user else 0,
+                user_text,
+                entities,
+                bot_username,
+                bot_user.id,
+            )
+            return
     if config.anthropic_client is None:
         await update.message.reply_text("Claude is not configured (missing ANTHROPIC_API_KEY).")
         return
 
     user = update.effective_user
     sender_id = user.id if user else 0
-    user_text = update.message.text
 
 # ----
 # First, retrieve relevant memories and build the profile system prompt — both happen before touching Claude.
 # memories (pinecone) + system prompt (profile) 
 # -------
 
-    memory_block = await memory.build_memory_context_block(sender_id, user_text)
-    system_prompt = memory.build_system_prompt(sender_id)
+    typing_task = asyncio.create_task(claude.keep_typing(update.message.chat))
+    try:
+        memory_block = await memory.build_memory_context_block(sender_id, user_text)
+        system_prompt = memory.build_system_prompt(sender_id)
 
 # ----
 # Second, Load the conversation history, append the new message, trim to the window limit.
 # -------
 
-    history: list[dict[str, str]] = list(context.chat_data.get("claude_messages") or [])
-    core_messages = claude.trim_messages(history + [{"role": "user", "content": user_text}])
-    
-    
-    api_messages: list[dict[str, str]] = []
-    if memory_block.strip():
-        api_messages.append(
-            {"role": "user", "content": config.MEMORY_CONTEXT_USER_PREFIX + memory_block.strip()},
-        )
-    api_messages.extend(core_messages)
+        history: list[dict[str, str]] = list(context.chat_data.get("claude_messages") or [])
+        core_messages = claude.trim_messages(history + [{"role": "user", "content": user_text}])
+        
+        
+        api_messages: list[dict[str, str]] = []
+        if memory_block.strip():
+            api_messages.append(
+                {"role": "user", "content": config.MEMORY_CONTEXT_USER_PREFIX + memory_block.strip()},
+            )
+        api_messages.extend(core_messages)
 
 # ----
-# Third, starts "typing .. " indicator and calls Claude. stops the indicator in the finally block.
+# Third, starts "typing .. " indicator and calls Claude and Tavily. stops the indicator in the finally block.
 # -------
 
-    typing_task = asyncio.create_task(claude.keep_typing(update.message.chat))
-    try:
         response = await config.anthropic_client.messages.create(
             model=config.CLAUDE_MODEL,
             max_tokens=config.MAX_TOKENS,
             system=system_prompt,
             messages=api_messages,
+            tools=[_TAVILY_TOOL_DEF],
         )
+
+        # bounded one-pass tool loop: if Claude requests Tavily, execute once and ask Claude to finalize
+        tool_uses = claude.tool_uses_from_response(response)
+        if tool_uses:
+            log.info("Claude selected tool=%s count=%s", tool_uses[0]["name"], len(tool_uses))
+            followup_messages: list[dict[str, Any]] = list(api_messages)
+            followup_messages.append({"role": "assistant", "content": response.content})
+            for tool_use in tool_uses:
+                tool_name = str(tool_use.get("name", ""))
+                tool_id = str(tool_use.get("id", ""))
+                tool_input = tool_use.get("input", {}) if isinstance(tool_use.get("input", {}), dict) else {}
+
+                tool_result: dict[str, Any]
+                if tool_name == "tavily_search":
+                    query = str(tool_input.get("query", "")).strip()
+                    tool_result = await tavily_search(query)
+                else:
+                    tool_result = {"ok": False, "error": "unsupported_tool", "results": []}
+
+                followup_messages.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": tool_id,
+                                "content": json.dumps(tool_result),
+                            },
+                        ],
+                    },
+                )
+
+            response = await config.anthropic_client.messages.create(
+                model=config.CLAUDE_MODEL,
+                max_tokens=config.MAX_TOKENS,
+                system=system_prompt,
+                messages=followup_messages,
+                tools=[_TAVILY_TOOL_DEF],
+            )
     except Exception:
         log.exception("Claude API error")
         await update.message.reply_text("Something went wrong talking to Claude. Try again shortly.")

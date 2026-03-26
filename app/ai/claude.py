@@ -21,6 +21,21 @@ def assistant_text_from_response(response: object) -> str:
             parts.append(block.text)
     return "".join(parts).strip() or "(No text in response.)"
 
+# extracts the tool uses from the claude response
+def tool_uses_from_response(response: object) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for block in getattr(response, "content", []):
+        if getattr(block, "type", None) != "tool_use":
+            continue
+        out.append(
+            {
+                "id": getattr(block, "id", ""),
+                "name": getattr(block, "name", ""),
+                "input": getattr(block, "input", {}) or {},
+            },
+        )
+    return out
+
 # background async task that sends a "typing..." indicator to Telegram every 4 seconds 
 async def keep_typing(chat: object) -> None:
     try:

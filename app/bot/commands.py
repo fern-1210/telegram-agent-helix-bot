@@ -66,6 +66,7 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f"Helix running\n"
         f"Uptime: {uptime}\n"
         f"Claude calls: {config.CLAUDE_CALL_COUNT}\n"
+        f"Tavily calls: {config.TAVILY_CALL_COUNT}/{config.TAVILY_DAILY_FREE_LIMIT}\n"
         f"History buffer: {n_hist}\n"
         f"Model: {config.CLAUDE_MODEL}\n"
         f"Profile: {'yes' if has_profile else 'fallback'}\n"
@@ -83,6 +84,7 @@ async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text(
         f"Session usage\n"
         f"Calls: {config.CLAUDE_CALL_COUNT}\n"
+        f"Tavily ok/fail: {config.TAVILY_SUCCESS_COUNT}/{config.TAVILY_FAILURE_COUNT}\n"
         f"In: {config.TOTAL_INPUT_TOKENS:,}  Out: {config.TOTAL_OUTPUT_TOKENS:,}\n"
         f"Est USD: ${est:.5f}"
     )

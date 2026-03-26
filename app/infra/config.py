@@ -30,6 +30,9 @@ START_TIME = time.time()
 CLAUDE_CALL_COUNT = 0
 TOTAL_INPUT_TOKENS = 0 # running total of input tokens sent to Claude this session
 TOTAL_OUTPUT_TOKENS = 0 # running total of output tokens received from Claude this session
+TAVILY_CALL_COUNT = 0
+TAVILY_SUCCESS_COUNT = 0
+TAVILY_FAILURE_COUNT = 0
 
 # Haiku pricing (same as stage3)
 HAIKU_INPUT_COST_PER_TOKEN = 0.0000008
@@ -43,6 +46,7 @@ HAIKU_OUTPUT_COST_PER_TOKEN = 0.000004
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "").strip()
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY", "").strip()
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "helix-memory").strip()
 
@@ -55,6 +59,11 @@ ALLOWED_TELEGRAM_USER_IDS: set[int] = set()
 if _raw_ids:
     ALLOWED_TELEGRAM_USER_IDS = {int(part.strip()) for part in _raw_ids.split(",") if part.strip()}
 
+_raw_group_ids = os.getenv("ALLOWED_TELEGRAM_GROUP_IDS", "").strip()
+ALLOWED_TELEGRAM_GROUP_IDS: set[int] = set()
+if _raw_group_ids:
+    ALLOWED_TELEGRAM_GROUP_IDS = {int(part.strip()) for part in _raw_group_ids.split(",") if part.strip()}
+
 # Haiku for dev, cap reply and last N message to claude
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-20241022").strip()
 MAX_TOKENS = 500
@@ -66,6 +75,7 @@ MAX_HISTORY_MESSAGES = 12
 
 
 # Long-term memory / embeddings (Stage 4)
+# NOTE: Defaults live here in code; .env commented lines are optional overrides/examples.
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small").strip()    # match pinecone setup
 MEMORY_DEDUP_THRESHOLD = float(os.getenv("MEMORY_DEDUP_THRESHOLD", "0.85")) # DEDUP cutoff too similar, skip write?
 MEMORY_RETRIEVAL_TOP_K = int(os.getenv("MEMORY_RETRIEVAL_TOP_K", "6")) # how many memories to retrieve
@@ -75,6 +85,17 @@ MEMORY_QUERY_INCLUDE_VALUES = os.getenv("MEMORY_QUERY_INCLUDE_VALUES", "true").s
     "true",
     "yes",
 )   #better confidence heuristics.
+
+
+# Stage 5 web search defaults (runtime defaults belong in config.py)
+TAVILY_MAX_RESULTS = int(os.getenv("TAVILY_MAX_RESULTS", "5"))
+TAVILY_SEARCH_TIMEOUT_SECONDS = float(os.getenv("TAVILY_SEARCH_TIMEOUT_SECONDS", "8"))
+TAVILY_DAILY_FREE_LIMIT = int(os.getenv("TAVILY_DAILY_FREE_LIMIT", "1000"))
+TAVILY_ENABLE_QUERY_SANITIZER = os.getenv("TAVILY_ENABLE_QUERY_SANITIZER", "true").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 
 
