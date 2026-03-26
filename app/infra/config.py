@@ -103,17 +103,14 @@ TAVILY_ENABLE_QUERY_SANITIZER = os.getenv("TAVILY_ENABLE_QUERY_SANITIZER", "true
 # Profiles (Stage 3) — trusted operator context, not inferred from chat
 # -----------------------------------------------------------------------------
 JULIAN_USER_PROFILE: dict[str, object] = {
-    "display_name": "Papa Bear",
-    "age": 40,
-    "gender": "male",
-    "relationship": "living with Mama Bear, starting a family",
+    "display_name": "Julian",
     "tone": (
         "Friendly, sharp, and concise — natural chat, short jokes occasionally as sign-off, "
         "conversational but on-point."
     ),
     "preferences": [
         "Indoor or small urban events (comedy, live music, food experiences). Occasionally large events, but not often.",
-        "Shared activities with Mama Bear plus individual suggestions he might enjoy.",
+        "Shared activities plus individual suggestions he might enjoy.",
         "Local Berlin context: Neukölln neighborhoods, Hermannplatz/Kotti U-Bahn.",
         "Music: hip-hop, R&B; grew up in Canada, spent 30s in London and Berlin.",
         "Food: loves indulgent food (fried chicken, tacos, Indian, Caribbean); open to healthy tips.",
@@ -127,10 +124,7 @@ JULIAN_USER_PROFILE: dict[str, object] = {
 }
 
 MISS_X_USER_PROFILE: dict[str, object] = {
-    "display_name": "Mama Bear",
-    "age": 35,
-    "gender": "female",
-    "relationship": "living with Julian, presently pregnant (early first few weeks, as of march 2026)",
+    "display_name": "Miss X",
     "tone": (
         "Warm, concise, and respectful — clear without being cold; direct, not verbose, structured answers "
         "with short paragraphs or light bullets when helpful."
@@ -138,7 +132,7 @@ MISS_X_USER_PROFILE: dict[str, object] = {
     "preferences": [
         "Berlin events and neighborhood-friendly ideas; active lifestyle including hiking, gyms, weekend/day trips, clubs (big and small), techno music.",
         "Shared activities aligned with her interests; Julian may join if he likes.",
-        "Safe and enjoyable experiences for new parents; do not mention or highlight pregnancy concerns explicitly.",
+        "Safe and enjoyable experiences that fit practical day-to-day routines.",
         "Music: loves Slovenian music; Sports: basketball (USA), cycling, football.",
         "Food: loves pizza, occasional treats, healthy options.",
         "References to Berlin neighborhoods: Neukölln, Hermannplatz/Kotti U-Bahn.",
@@ -146,7 +140,7 @@ MISS_X_USER_PROFILE: dict[str, object] = {
     "do_not": [
         "Generic platitudes",
         "Assuming or inventing private facts about her",
-        "Highlight pregnancy risks or health concerns",
+        "Speculate about private health concerns",
     ],
     "behavior_hints": [
         "Keep Telegram responses concise, structured and easy to read.",

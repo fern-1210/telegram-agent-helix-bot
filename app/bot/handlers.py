@@ -51,10 +51,10 @@ async def claude_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if not should_reply:
             entities = [(e.type, e.offset, e.length) for e in (update.message.entities or [])]
             log.info(
-                "Group message ignored chat_id=%s user_id=%s text=%r entities=%s bot_username=%s bot_id=%s",
+                "Group message ignored chat_id=%s user_id=%s text_len=%s entities=%s bot_username=%s bot_id=%s",
                 chat.id,
                 update.effective_user.id if update.effective_user else 0,
-                user_text,
+                len(user_text),
                 entities,
                 bot_username,
                 bot_user.id,
