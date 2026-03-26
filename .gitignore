@@ -210,8 +210,8 @@ __marimo__/
 # Helix Bot — local only
 *.log
 PLAN.md
-example_guide/
-# Stage learning notebooks (under example_guide; adjust if you track example_guide in git)
-example_guide/stage_workbooks/stage*.ipynb
+learning_modules/
+# Stage learning notebooks (under learning_modules; adjust if you track learning_modules in git)
+learning_modules/stage_workbooks/stage*.ipynb
 
 
