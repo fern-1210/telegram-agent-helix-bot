@@ -15,14 +15,14 @@ from app.infra.logging import get_logger
 
 log = get_logger("helix")
 
-
+# required for the /status for time formatting
 def _format_uptime(seconds: float) -> str:
     seconds = int(seconds)
     mins, sec = divmod(seconds, 60)
     hrs, mins = divmod(mins, 60)
     return f"{hrs}h {mins}m {sec}s"
 
-
+# /start command: clears history and provides a welcome message
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not access.is_allowed(update):
         return
@@ -32,7 +32,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "Commands: /help, /memory_list, /memory_debug, /memory_reset, /status, …"
     )
 
-
+# /help command: provides a list of commands
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not access.is_allowed(update):
         return
@@ -47,14 +47,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "Any other text — Claude"
     )
 
-
+# /clear command: wipes the in-memory Claude conversation history for this chat
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not access.is_allowed(update):
         return
     context.chat_data.pop("claude_messages", None)
     await update.message.reply_text("In-chat history cleared (Pinecone untouched).")
 
-
+# /status command: provides a lightweight status for operators (whitelisted only)
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not access.is_allowed(update):
         return
@@ -72,7 +72,7 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f"Memory: {'on' if config.MEMORY_ENABLED else 'off'} ({config.PINECONE_INDEX_NAME})"
     )
 
-
+# /usage command: provides a usage summary for the current session
 async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not access.is_allowed(update):
         return
@@ -87,7 +87,7 @@ async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         f"Est USD: ${est:.5f}"
     )
 
-
+# /memory_reset command: deletes all memories for the current user
 async def memory_reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not access.is_allowed(update):
         return
@@ -104,7 +104,7 @@ async def memory_reset_command(update: Update, context: ContextTypes.DEFAULT_TYP
         log.exception("memory_reset failed user_id=%s", uid)
         await update.message.reply_text("Memory reset failed (see server logs).")
 
-
+# /memory_list command: lists the IDs of the current user's memories
 async def memory_list_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not access.is_allowed(update):
         return

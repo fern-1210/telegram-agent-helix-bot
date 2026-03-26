@@ -11,7 +11,7 @@ from app.infra.logging import setup_logging
 setup_logging()
 
 # Config loads dotenv, clients, and memory flags — must follow logging setup.
-from app.infra import config  # noqa: E402
+from app.infra import config  # noqa: E402  comments suppress linter warnings about imports not being at the top of the file — the order here is intentional.
 from app.infra.logging import get_logger  # noqa: E402
 
 log = get_logger("helix")

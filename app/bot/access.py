@@ -6,7 +6,7 @@ from telegram import Update
 
 from app.infra import config
 
-
+# connected to each handler to ensure only whitelisted users can use the bot
 def is_allowed(update: Update) -> bool:
     user = update.effective_user
     if user is None:

@@ -29,17 +29,32 @@ async def claude_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     sender_id = user.id if user else 0
     user_text = update.message.text
 
+# ----
+# First, retrieve relevant memories and build the profile system prompt — both happen before touching Claude.
+# memories (pinecone) + system prompt (profile) 
+# -------
+
     memory_block = await memory.build_memory_context_block(sender_id, user_text)
     system_prompt = memory.build_system_prompt(sender_id)
 
+# ----
+# Second, Load the conversation history, append the new message, trim to the window limit.
+# -------
+
     history: list[dict[str, str]] = list(context.chat_data.get("claude_messages") or [])
     core_messages = claude.trim_messages(history + [{"role": "user", "content": user_text}])
+    
+    
     api_messages: list[dict[str, str]] = []
     if memory_block.strip():
         api_messages.append(
             {"role": "user", "content": config.MEMORY_CONTEXT_USER_PREFIX + memory_block.strip()},
         )
     api_messages.extend(core_messages)
+
+# ----
+# Third, starts "typing .. " indicator and calls Claude. stops the indicator in the finally block.
+# -------
 
     typing_task = asyncio.create_task(claude.keep_typing(update.message.chat))
     try:
@@ -55,6 +70,10 @@ async def claude_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
     finally:
         typing_task.cancel()
+
+# ----
+# Fourth, update the session usage counters and log the usage.
+# -------
 
     config.CLAUDE_CALL_COUNT += 1
     usage = getattr(response, "usage", None)
@@ -75,8 +94,11 @@ async def claude_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     await update.message.reply_text(assistant_text)
 
-    await memory.maybe_write_memory(sender_id, user_text, assistant_text)
+    await memory.maybe_write_memory(sender_id, user_text, assistant_text)       # bot asynchronously decides to write the memory
 
 
+
+
+# is a catch-all registered with the application that logs any unhandled exception from any handler.
 async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     log.exception("Handler error", exc_info=context.error)
