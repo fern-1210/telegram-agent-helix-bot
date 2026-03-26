@@ -34,6 +34,7 @@ Token caps, conversation windowing, daily limits, Anthropic spend cap.
 
 - Telegram Bot API:[Messaging] --->	   ✅ Production
 - Anthropic Claude: [AI Brain]	--->      ✅ Haiku/Sonnet
+- Open AI [Embedding]  ----> ✅ text to vector
 - Pinecone	Vector: [Memory]	--->      ✅ Per-user namespaces
 - Tavily: [Web Search]	--->   ✅ Sanitized queries
 - Railway: [Hosting]	 --->  ✅ One-click deploy
