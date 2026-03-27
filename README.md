@@ -1,142 +1,163 @@
-# 🤖 Helix — Private Berlin AI Agent for Two
+# 🤖 Helix — Private Telegram AI Agent
 
-Production‑ready Telegram AI agent for Mr X and Miss X. Tuned for Berlin life: urban sports, comedy nights, cultural events, and neighbourhood discoveries. It remembers conversations, searches the web, and runs with strict security and cost controls.
+Production‑ready Telegram AI agent for 2 whitelisted users. Tuned for Berlin life: urban sports, comedy nights, cultural events, and neighbourhood discoveries. It remembers conversations, searches the web, and runs with strict security and cost controls.
 
+---
 
+## Prerequisites
 
-## ✨ Features
+Before you start, you need accounts and API keys from:
 
-**Two‑user private access**
-Whitelisted to exactly two Telegram user IDs; everyone else ignored.
+- **Telegram** — create a bot via [@BotFather](https://t.me/botfather), get your `TELEGRAM_BOT_TOKEN`
+- **Anthropic** — [console.anthropic.com](https://console.anthropic.com) — get your `ANTHROPIC_API_KEY`. Set a spend limit before deploying.
+- **OpenAI** — [platform.openai.com](https://platform.openai.com) — get your `OPENAI_API_KEY` for embeddings. Set a spend limit.
+- **Pinecone** — [app.pinecone.io](https://app.pinecone.io) — create a free index with **dimension 1536** and **cosine metric**. Note the index name.
+- **Tavily** — [app.tavily.com](https://app.tavily.com) — get your `TAVILY_API_KEY` (free tier covers light use)
+- **Python 3.11+** installed locally
 
-**Claude‑powered**
-Anthropic Claude (Haiku for efficiency, Sonnet for prod polish).
+---
 
-**Pinecone semantic memory**
-Per‑user summaries and embeddings for long‑term recall across sessions.
-
-**Tavily web search**
-Claude decides when to search; queries are sanitized for anonymity.
-
-**local persona**
-Recommendations for local neighbourhood events, comedy clubs, urban sports, culture.
-
-**Privacy‑first security**
-No message logs, no hardcoded secrets, anonymous searches, prompt injection defense.
-
-**Cost controls**
-Token caps, conversation windowing, daily limits, Anthropic spend cap.
-
-
-
-
-## 🛠 Tech Stack
-
-- Telegram Bot API:[Messaging] --->	   ✅ Production
-- Anthropic Claude: [AI Brain]	--->      ✅ Haiku/Sonnet
-- Open AI [Embedding]  ----> ✅ text to vector
-- Pinecone	Vector: [Memory]	--->      ✅ Per-user namespaces
-- Tavily: [Web Search]	--->   ✅ Sanitized queries
-- Railway: [Hosting]	 --->  ✅ One-click deploy
-
-
-## Quick Start
-
-**Local Development**
-
+## Quick Start — Local Development
 ```bash
 git clone https://github.com/fern-1210/telegram-agent-helix-bot.git
 cd telegram-agent-helix-bot
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your keys
-python src/main.py
+python -m app.main
 ```
 
-**Production Deploy (Railway)**
+To confirm everything is working, send these to your bot in order:
 
-1. Fork or use this repo directly
-2. Click "Deploy on Railway" above or:
+1. `/status` — should show uptime, model, and memory: on
+2. `/memory_list` — should return "No stored memories" (not an error)
+3. A plain message — Claude should reply
+4. `/memory_debug` after 60 seconds — should show at least one stored memory
 
-```bash
-railway login
-railway new
-```
-3. Railway will detect Python + requirements.txt
-4. Add environment variables in Railway dashboard:
 
-```bash
-TELEGRAM_BOT_TOKEN=your_token
+---
+
+## Production Deploy — Railway
+
+Railway connects directly to your GitHub repo and runs the bot in the cloud. No server management required.
+
+See [`docs/deployment/railway.md`](docs/deployment/railway.md) for a detailed Railway deployment guide, including pre-flight API key checklist, Railway-specific setup instructions, and required/optional environment variables along with troubleshooting guide and extra tips.
+
+
+
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in all values:
+```env
+TELEGRAM_BOT_TOKEN=
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+PINECONE_API_KEY=
+PINECONE_INDEX_NAME=
+TAVILY_API_KEY=
 ALLOWED_TELEGRAM_USER_IDS=123456789,987654321
-ANTHROPIC_API_KEY=your_key
-PINECONE_API_KEY=your_key
-TAVILY_API_KEY=your_key
-OPENAI_API_KEY=your_key
 ```
-5. Deploy complete 🚀 Railway handles scaling, restarts, and secrets.
-[→ Full Railway Deployment Guide](docs/deployment/railway.md)
 
+`ALLOWED_TELEGRAM_USER_IDS` is a comma-separated list of Telegram user IDs. Only these users can interact with the bot. Everyone else is silently ignored. You can find your Telegram user ID by messaging [@userinfobot](https://t.me/userinfobot).
 
+---
 
+## Cost Estimates
 
-## 📊 Example Cost Table by Usage Tier
+Set spend limits in the Anthropic and OpenAI consoles before deploying.
 
-| Tier              | Messages / Day | Messages / Week | Messages / Month | LLM (Claude) | Embeddings + Pinecone | Tavily          | Railway | Est. Total / Month | Typical Scenario                                 |
-|-------------------|:--------------:|:---------------:|:----------------:|:-------------|:----------------------|:----------------|:-------:|:-------------------:|:-------------------------------------------------|
-| **1. Tiny Hobby** | ~10            | ~70             | ~300             | ≈ $1–2       | ≈ $0 (embeds) + $0 (free) | $0 (few calls, in free) | $1–5   | $2–7               | Playing with Helix a few times a day.            |
-| **2. Light Daily**| ~50            | ~350            | ~1,500           | ≈ $5–10      | <$0.20 + $0           | $0–5            | ~$5     | $10–20             | Two users chatting daily, planning events.        |
-| **3. Medium Personal** | ~150       | ~1,000          | ~4,500           | ≈ $20–35     | <$0.50 + $0–5         | $5–10           | ~$5     | $30–55             | Heavy personal use: notes, planning, Berlin recs. |
+| Tier | Messages/day | Est. monthly cost | Typical use |
+|---|---|---|---|
+| Hobby | ~10/day | $2–7 | Testing, occasional use |
+| Light daily | ~50/day | $10–20 | Two users, daily planning |
+| Medium personal | ~150/day | $30–55 | Heavy use, notes, recommendations |
 
-Pro tip: Set Anthropic & Open AI spend limit in console before deploying.
+Cost breakdown per tier is dominated by Claude API calls. Embeddings (OpenAI) and Pinecone are near-zero at personal scale. Tavily free tier covers most light usage. Railway free tier covers hobby and light daily use — check [railway.com/pricing](https://railway.com/pricing) for current limits.
 
-_These estimates are illustrative (March 2025) and may vary with LLM/token prices, Pinecone/Tavily quotas, and usage patterns. See individual service dashboards for precise billing._
+*Estimates based on March 2026 pricing. Check individual service dashboards for current rates.*
 
+---
 
+## Bot Commands
 
-
-## 🧪 Operator Commands
 Send these to the bot (whitelisted users only):
-```bash
-/status     # Bot uptime, memory usage, token spend
-/usage      # Daily message count, search usage
-/reset      # Clear conversation window (debug)
-/memory     # Show recent memories (debug)
+```
+/start          Intro message + reset conversation window
+/clear          Wipe in-session chat history (Pinecone untouched)
+/status         Uptime, model, token spend, memory status
+/usage          Session token counts and estimated cost
+/memory_list    Your stored memory IDs with kind and timestamp
+/memory_debug   Same as above plus full summary text
+/memory_reset   Permanently delete all your long-term memories
+/help           Full command list
 ```
 
+---
 
+## Tech Stack
 
-## Security & Privacy Model
+| Component | Service | Purpose |
+|---|---|---|
+| Messaging | Telegram Bot API | User interface |
+| AI brain | Anthropic Claude | Responses and tool decisions |
+| Embeddings | OpenAI text-embedding | Text to vector conversion |
+| Memory | Pinecone | Per-user long-term vector storage |
+| Web search | Tavily | Sanitized real-time search |
+| Hosting | Railway | Cloud deployment and uptime |
 
-Helix is built with a privacy‑first mindset:
+---
 
-- **Whitelist‑only access**: The bot only responds to the two configured Telegram user IDs; all others are silently ignored.
+## Security and Privacy
 
-- **No message content in logs**: Logs contain only metadata (timestamp, user ID, token counts, response time, model)—never raw message content.
+- **Whitelist-only access** — the bot only responds to configured Telegram user IDs. All others are silently ignored.
+- **No message content in logs** — logs contain only metadata (timestamp, user ID, token counts). Never raw message text.
+- **Secrets never in code** — all API keys loaded from environment variables only. Nothing hardcoded.
+- **Pinecone stores summaries only** — short semantic summaries and embeddings per user, not full transcripts.
+- **Sanitized web searches** — personal identifiers (names, addresses, phone numbers) are stripped from queries before they reach Tavily.
+- **Prompt injection defence** — the system prompt explicitly instructs Claude to maintain its rules regardless of user message content.
 
-- **Secrets never in code**: All API keys and access tokens are loaded from environment variables; no hardcoded secrets.
+---
 
-- **Pinecone stores summaries only**: Rather than storing full raw transcripts, Helix only saves short semantic summaries and embeddings per user.
+## Features
 
-- **Anonymous Tavily queries**: Before calling the Tavily search API, queries are sanitized to remove personal identifiers and only focus on general or location‑level intent (e.g., “comedy clubs in Prenzlauer Berg this weekend”).
+**Two-user private access**
+Whitelisted to exactly two Telegram user IDs. Everyone else is ignored.
 
-- **Prompt‑injection aware**: The system prompt is explicitly written to instruct Claude to keep its identity and rules intact, refuse to reveal system prompts, and ignore attempts to override system instructions.
+**Claude-powered responses**
+Anthropic Claude handles all conversations, tool decisions, and memory extraction.
 
+**Long-term semantic memory**
+Per-user Pinecone namespaces store conversation summaries as vector embeddings. The bot remembers context across sessions and days.
 
+**Web search when needed**
+Claude decides autonomously when to search the web. Queries are sanitised before leaving your server.
+
+**Local persona**
+Tuned for Berlin: neighbourhood recommendations, comedy clubs, urban sports, cultural events.
+
+**Cost controls**
+Token caps, conversation windowing, and session cost tracking built in. Spend limits enforced at the API provider level.
+
+---
 
 ## About the Builder
 
-Julian Fernandes — Berlin-based data analyst and CRM specialist.  
+Julian Fernandes — Berlin-based data analyst and CRM specialist.
 [LinkedIn](https://www.linkedin.com/in/julian-fernandes-a1a19ba/)
 
-I didn’t finish a 12‑week data bootcamp and file the certificate away — I built Helix as a sandbox for testing, breaking, and iterating on everything I’ve learned. This project is my way of turning curiosity into shipping: a private, Berlin‑tuned Telegram agent that I can poke, refine, and reshape until it genuinely fits into my daily life.
+I didn't finish a 12-week data bootcamp and file the certificate away — I built Helix as a sandbox for testing, breaking, and iterating on everything I've learned. This project is my way of turning curiosity into shipping: a private, Berlin-tuned Telegram agent that I can poke, refine, and reshape until it genuinely fits into my daily life.
 
-My background in CRM and customer data means I care less about shiny tech and more about actionable change: does this actually help me and Miss X decide faster, plan better, and discover more? Helix is that philosophy in code — a living experiment where I use AI as a thinking partner, use each iteration as a lesson, and keep pushing the system toward something small, focused, and genuinely useful.
+My background in CRM and customer data means I care less about shiny tech and more about actionable change: does this actually help me decide faster, plan better, and discover more? Helix is that philosophy in code — a living experiment where I use AI as a thinking partner, treat each iteration as a lesson, and keep pushing toward something small, focused, and genuinely useful.
 
+---
 
 ## License
 
 MIT — use it, adapt it, build on it.
 
-If you end up using this as a base for your own bot or product, a quick mention or a ⭐ on the repo would make my day.
+If you use this as a base for your own bot, a mention or a star on the repo would be appreciated.
+
