@@ -124,23 +124,17 @@ Send these to the bot (whitelisted users only):
 
 ## Features
 
-**Two-user private access**
-Whitelisted to exactly two Telegram user IDs. Everyone else is ignored.
+- **Two-user private access** - Whitelisted to exactly two Telegram user IDs. Everyone else is ignored.
 
-**Claude-powered responses**
-Anthropic Claude handles all conversations, tool decisions, and memory extraction.
+- **Claude-powered responses** - Anthropic Claude handles all conversations, tool decisions, and memory extraction.
 
-**Long-term semantic memory**
-Per-user Pinecone namespaces store conversation summaries as vector embeddings. The bot remembers context across sessions and days.
+- **Long-term semantic memory** - Per-user Pinecone namespaces store conversation summaries as vector embeddings. The bot remembers context across sessions and days.
 
-**Web search when needed**
-Claude decides autonomously when to search the web. Queries are sanitised before leaving your server.
+- **Web search when needed** - Claude decides autonomously when to search the web. Queries are sanitised before leaving your server.
 
-**Local persona**
-Tuned for Berlin: neighbourhood recommendations, comedy clubs, urban sports, cultural events.
+- **Local persona** - Tuned for Berlin: neighbourhood recommendations, comedy clubs, urban sports, cultural events.
 
-**Cost controls**
-Token caps, conversation windowing, and session cost tracking built in. Spend limits enforced at the API provider level.
+- **Cost controls** - Token caps, conversation windowing, and session cost tracking built in. Spend limits enforced at the API provider level.
 
 ---
 
