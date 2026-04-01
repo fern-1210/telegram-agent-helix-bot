@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from app.ai import claude
 from app.ai import embeddings
 from app.ai import memory
 from app.bot import access
 from app.infra import config
 from app.infra.logging import get_logger
+from app.social.discovery import run_social_discovery
+from app.social.intent import SocialIntent
 
 log = get_logger("helix")
 
@@ -29,6 +33,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     context.chat_data.pop("claude_messages", None)
     await update.message.reply_text(
         "Helix: Claude + per-user profiles + Pinecone long-term memory.\n"
+        "Discovery: /comedy /music /today /events /food\n"
         "Commands: /help, /memory_list, /memory_debug, /memory_reset, /status, …"
     )
 
@@ -43,9 +48,60 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/memory_reset — delete YOUR long-term vectors in Pinecone\n"
         "/memory_list — ids + kind + created_at (metadata)\n"
         "/memory_debug — same + summary text (private)\n"
+        "/comedy /music /today /events /food — Berlin discovery (Tavily, trusted list)\n"
         "/help /status /usage\n"
+        "Short event-style questions may also trigger discovery.\n"
         "Any other text — Claude"
     )
+
+
+async def _run_social_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    intent: SocialIntent,
+) -> None:
+    if not access.is_allowed(update):
+        return
+    if not update.message:
+        return
+    extra = " ".join(context.args or [])
+    user = update.effective_user
+    sender_id = user.id if user else 0
+    cmd_line = (update.message.text or "").strip()
+
+    typing_task = asyncio.create_task(claude.keep_typing(update.message.chat))
+    try:
+        reply_text = await run_social_discovery(intent, extra)
+    finally:
+        typing_task.cancel()
+
+    history: list[dict[str, str]] = list(context.chat_data.get("claude_messages") or [])
+    history.append({"role": "user", "content": cmd_line})
+    history.append({"role": "assistant", "content": reply_text})
+    context.chat_data["claude_messages"] = claude.trim_messages(history)
+
+    await update.message.reply_text(reply_text)
+    await memory.maybe_write_memory(sender_id, cmd_line, reply_text)
+
+
+async def social_comedy_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _run_social_command(update, context, SocialIntent.COMEDY)
+
+
+async def social_music_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _run_social_command(update, context, SocialIntent.MUSIC)
+
+
+async def social_today_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _run_social_command(update, context, SocialIntent.TODAY)
+
+
+async def social_events_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _run_social_command(update, context, SocialIntent.EVENTS)
+
+
+async def social_food_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _run_social_command(update, context, SocialIntent.FOOD)
 
 # /clear command: wipes the in-memory Claude conversation history for this chat
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

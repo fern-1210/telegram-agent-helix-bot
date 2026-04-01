@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import re
 
-# ----
-#  removes high-risk PII-like terms before external web lookup
-# -------
+
 _RE_EMAIL = re.compile(r"\b[\w.\-+%]+@[\w.\-]+\.[A-Za-z]{2,}\b")
 _RE_PHONEISH = re.compile(r"\b\+?\d[\d\s\-()]{7,}\d\b")
 _RE_POSTCODE = re.compile(r"\b\d{5}\b")
@@ -18,6 +16,9 @@ _RE_APT_UNIT = re.compile(r"\b(?:no\.?|#|apt\.?|flat|unit)\s*\d+\w*\b", re.IGNOR
 _RE_MULTISPACE = re.compile(r"\s+")
 
 
+# ----
+#  removes high-risk PII-like terms before external web lookup
+# -------
 def sanitize_query_for_web(raw_query: str) -> str:
     """Redact likely personal identifiers while preserving search intent."""
     text = (raw_query or "").strip()

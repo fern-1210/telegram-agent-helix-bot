@@ -15,6 +15,8 @@ from app.ai.tavily_search import tavily_search
 from app.bot import access
 from app.infra import config
 from app.infra.logging import get_logger
+from app.social.discovery import run_social_discovery
+from app.social.intent import detect_intent, should_route_natural_language_discovery
 
 log = get_logger("helix")
 
@@ -32,6 +34,12 @@ _TAVILY_TOOL_DEF: dict[str, Any] = {
         "required": ["query"],
     },
 }
+
+
+
+# ----
+# # claude_reply is the main handler for the bot. it is called when a message is received.
+# -------
 
 
 async def claude_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -60,26 +68,52 @@ async def claude_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 bot_user.id,
             )
             return
+    user = update.effective_user
+    sender_id = user.id if user else 0
+
+    # Stage 6: conservative natural-language routing to local discovery (no Claude)
+    if config.SOCIAL_DISCOVERY_ENABLED and should_route_natural_language_discovery(
+        user_text,
+        config.SOCIAL_NL_MAX_CHARS,
+    ):
+        nl_intent, remainder = detect_intent(user_text)
+        if nl_intent is not None:
+            log.info("social_nl_route intent=%s text_len=%s", nl_intent.value, len(user_text))
+            typing_task = asyncio.create_task(claude.keep_typing(update.message.chat))
+            try:
+                reply_text = await run_social_discovery(nl_intent, remainder)
+            except Exception:
+                log.exception("Social discovery error")
+                await update.message.reply_text("Discovery failed. Try again or use a slash command.")
+                return
+            finally:
+                typing_task.cancel()
+
+            history_nl: list[dict[str, str]] = list(context.chat_data.get("claude_messages") or [])
+            history_nl.append({"role": "user", "content": user_text})
+            history_nl.append({"role": "assistant", "content": reply_text})
+            context.chat_data["claude_messages"] = claude.trim_messages(history_nl)
+            await update.message.reply_text(reply_text)
+            await memory.maybe_write_memory(sender_id, user_text, reply_text)
+            return
+
     if config.anthropic_client is None:
         await update.message.reply_text("Claude is not configured (missing ANTHROPIC_API_KEY).")
         return
 
-    user = update.effective_user
-    sender_id = user.id if user else 0
-
-# ----
-# First, retrieve relevant memories and build the profile system prompt — both happen before touching Claude.
-# memories (pinecone) + system prompt (profile) 
-# -------
+    # ----
+    # First, retrieve relevant memories and build the profile system prompt — both happen before touching Claude.
+    # memories (pinecone) + system prompt (profile)
+    # -------
 
     typing_task = asyncio.create_task(claude.keep_typing(update.message.chat))
     try:
         memory_block = await memory.build_memory_context_block(sender_id, user_text)
         system_prompt = memory.build_system_prompt(sender_id)
 
-# ----
-# Second, Load the conversation history, append the new message, trim to the window limit.
-# -------
+        # ----
+        # Second, load the conversation history, append the new message, trim to the window limit.
+        # -------
 
         history: list[dict[str, str]] = list(context.chat_data.get("claude_messages") or [])
         core_messages = claude.trim_messages(history + [{"role": "user", "content": user_text}])
@@ -92,9 +126,9 @@ async def claude_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             )
         api_messages.extend(core_messages)
 
-# ----
-# Third, starts "typing .. " indicator and calls Claude and Tavily. stops the indicator in the finally block.
-# -------
+        # ----
+        # Third: Claude + optional Tavily (typing stopped in finally below).
+        # -------
 
         response = await config.anthropic_client.messages.create(
             model=config.CLAUDE_MODEL,
@@ -149,9 +183,9 @@ async def claude_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     finally:
         typing_task.cancel()
 
-# ----
-# Fourth, update the session usage counters and log the usage.
-# -------
+    # ----
+    # Fourth, update the session usage counters and log usage.
+    # -------
 
     config.CLAUDE_CALL_COUNT += 1
     usage = getattr(response, "usage", None)

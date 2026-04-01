@@ -216,5 +216,6 @@ PLAN.md
 learning_modules/
 # Stage learning notebooks (under learning_modules; adjust if you track learning_modules in git)
 learning_modules/stage_workbooks/stage*.ipynb
+trusted_list/
 
 

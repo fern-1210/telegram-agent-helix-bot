@@ -93,8 +93,15 @@ Send these to the bot (whitelisted users only):
 /memory_list    Your stored memory IDs with kind and timestamp
 /memory_debug   Same as above plus full summary text
 /memory_reset   Permanently delete all your long-term memories
+/comedy         Berlin-area comedy discovery (Tavily + trusted list)
+/music          Live music / clubs discovery (optional: /music jazz)
+/today          What’s on tonight / today
+/events         General events (7–10 day window)
+/food           Food festivals & large food events
 /help           Full command list
 ```
+
+Short, event-style questions may also trigger discovery (see Stage 6). Edit venues and sources in [`trusted_list/list.txt`](trusted_list/list.txt) (template in [`trusted_list/README.md`](trusted_list/README.md)).
 
 ---
 

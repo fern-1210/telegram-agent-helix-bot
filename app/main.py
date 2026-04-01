@@ -53,6 +53,11 @@ def main() -> None:
     application.add_handler(CommandHandler("memory_reset", commands.memory_reset_command))  # 🧹 delete YOUR long-term vectors in Pinecone
     application.add_handler(CommandHandler("memory_list", commands.memory_list_command))  # 📊 ids + kind + created_at (metadata)
     application.add_handler(CommandHandler("memory_debug", commands.memory_debug_command))  # 🔍 same + summary text (private)
+    application.add_handler(CommandHandler("comedy", commands.social_comedy_command))
+    application.add_handler(CommandHandler("music", commands.social_music_command))
+    application.add_handler(CommandHandler("today", commands.social_today_command))
+    application.add_handler(CommandHandler("events", commands.social_events_command))
+    application.add_handler(CommandHandler("food", commands.social_food_command))
     application.add_handler(
         MessageHandler((filters.TEXT | filters.CAPTION) & ~filters.COMMAND, handlers.claude_reply),
     )

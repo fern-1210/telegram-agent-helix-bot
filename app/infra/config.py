@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import re
 import time
+from pathlib import Path
 from typing import Any
 
 from anthropic import AsyncAnthropic
@@ -97,6 +98,52 @@ TAVILY_ENABLE_QUERY_SANITIZER = os.getenv("TAVILY_ENABLE_QUERY_SANITIZER", "true
     "yes",
 )
 
+
+# -----------------------------------------------------------------------------
+# Stage 6 — local discovery (trusted list + Tavily)
+# -----------------------------------------------------------------------------
+
+
+def _trusted_list_file_path() -> Path:
+    raw = os.getenv("TRUSTED_LIST_PATH", "").strip()
+    if raw:
+        return Path(raw).expanduser()
+    return Path(__file__).resolve().parent.parent.parent / "trusted_list" / "list.txt"
+
+
+TRUSTED_LIST_FILE_PATH = _trusted_list_file_path()
+
+SOCIAL_DISCOVERY_ENABLED = os.getenv("SOCIAL_DISCOVERY_ENABLED", "true").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+)
+SOCIAL_DEFAULT_DAYS = int(os.getenv("SOCIAL_DEFAULT_DAYS", "7"))
+SOCIAL_EXTEND_DAYS = int(os.getenv("SOCIAL_EXTEND_DAYS", "10"))
+SOCIAL_MAX_QUERIES = int(os.getenv("SOCIAL_MAX_QUERIES", "3"))
+SOCIAL_TOP_N = int(os.getenv("SOCIAL_TOP_N", "5"))
+SOCIAL_MERGE_THRESHOLD = int(os.getenv("SOCIAL_MERGE_THRESHOLD", "6"))
+SOCIAL_AREA_LABEL = os.getenv("SOCIAL_AREA_LABEL", "Kreuzberg Neukölln").strip()
+SOCIAL_NL_MAX_CHARS = int(os.getenv("SOCIAL_NL_MAX_CHARS", "300"))
+
+_listing_hints = os.getenv("SOCIAL_LISTING_DOMAIN_HINTS", "").strip()
+if _listing_hints:
+    SOCIAL_LISTING_DOMAIN_HINTS = [x.strip().lower() for x in _listing_hints.split(",") if x.strip()]
+else:
+    SOCIAL_LISTING_DOMAIN_HINTS = [
+        "ra.co",
+        "residentadvisor.net",
+        "eventbrite.de",
+        "eventbrite.com",
+        "meetup.com",
+        "berlin.de",
+        "instagram.com",
+    ]
+
+_extra_hosts = os.getenv("SOCIAL_TRUSTED_EXTRA_HOSTS", "").strip()
+SOCIAL_TRUSTED_EXTRA_HOSTS = (
+    [x.strip().lower() for x in _extra_hosts.split(",") if x.strip()] if _extra_hosts else []
+)
 
 
 # -----------------------------------------------------------------------------
