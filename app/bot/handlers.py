@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+from pathlib import Path
 from typing import Any
 
 from telegram import Update
@@ -19,6 +21,26 @@ from app.social.discovery import run_social_discovery
 from app.social.intent import detect_intent, should_route_natural_language_discovery
 
 log = get_logger("helix")
+_DEBUG_LOG_PATH = Path("/Users/Julian/Desktop/GitHub-Repo/telegram-agent-helix-bot/.cursor/debug-d02e3e.log")
+_DEBUG_SESSION_ID = "d02e3e"
+
+
+def _agent_debug_log(hypothesis_id: str, location: str, message: str, data: dict[str, object]) -> None:
+    payload = {
+        "sessionId": _DEBUG_SESSION_ID,
+        "runId": os.getenv("DEBUG_RUN_ID", "initial"),
+        "hypothesisId": hypothesis_id,
+        "location": location,
+        "message": message,
+        "data": data,
+        "timestamp": int(__import__("time").time() * 1000),
+    }
+    try:
+        _DEBUG_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with _DEBUG_LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(payload, ensure_ascii=True) + "\n")
+    except Exception:
+        pass
 
 _TAVILY_TOOL_DEF: dict[str, Any] = {
     "name": "tavily_search",
@@ -48,7 +70,31 @@ async def claude_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     user_text = (update.message.text or update.message.caption or "").strip()
     if not user_text:
         return
+    # region agent log
+    _agent_debug_log(
+        "H5",
+        "app/bot/handlers.py:claude_reply:entry",
+        "Incoming Telegram message reached claude_reply",
+        {
+            "user_id": update.effective_user.id if update.effective_user else None,
+            "chat_id": update.effective_chat.id if update.effective_chat else None,
+            "chat_type": update.effective_chat.type if update.effective_chat else None,
+            "text_len": len(user_text),
+        },
+    )
+    # endregion
     if not access.is_allowed(update):
+        # region agent log
+        _agent_debug_log(
+            "H1",
+            "app/bot/handlers.py:claude_reply:blocked_access",
+            "Message blocked by access.is_allowed",
+            {
+                "user_id": update.effective_user.id if update.effective_user else None,
+                "chat_id": update.effective_chat.id if update.effective_chat else None,
+            },
+        )
+        # endregion
         return
     # check if the message is in a group chat and if the bot is mentioned
     chat = update.effective_chat
@@ -57,6 +103,18 @@ async def claude_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         bot_username = bot_user.username or ""
         should_reply = access.should_reply_to_group_message(update, bot_username, bot_user.id)
         if not should_reply:
+            # region agent log
+            _agent_debug_log(
+                "H4",
+                "app/bot/handlers.py:claude_reply:group_not_addressed",
+                "Group message ignored because bot mention/reply requirement not met",
+                {
+                    "chat_id": chat.id,
+                    "user_id": update.effective_user.id if update.effective_user else None,
+                    "bot_username": bot_username,
+                },
+            )
+            # endregion
             entities = [(e.type, e.offset, e.length) for e in (update.message.entities or [])]
             log.info(
                 "Group message ignored chat_id=%s user_id=%s text_len=%s entities=%s bot_username=%s bot_id=%s",

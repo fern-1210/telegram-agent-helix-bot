@@ -213,6 +213,10 @@ __marimo__/
 # Helix Bot — local only
 *.log
 PLAN.md
+LEARNING_LOG.md
+SERVER_CLEANUP_RUNBOOK.md
+SERVER_DISCOVERY.md
+TELEGRAM_BOT_HETZNER_STATUS.md
 learning_modules/
 # Stage learning notebooks (under learning_modules; adjust if you track learning_modules in git)
 learning_modules/stage_workbooks/stage*.ipynb

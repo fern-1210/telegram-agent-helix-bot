@@ -6,6 +6,10 @@ Run from project root:  python -m app.main.py
 """
 
 from __future__ import annotations
+import json
+import os
+import time
+from pathlib import Path
 from app.infra.logging import setup_logging
 
 setup_logging()
@@ -22,8 +26,41 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters  #
 from app.bot import commands  # noqa: E402
 from app.bot import handlers  # noqa: E402
 
+_DEBUG_LOG_PATH = Path("/Users/Julian/Desktop/GitHub-Repo/telegram-agent-helix-bot/.cursor/debug-d02e3e.log")
+_DEBUG_SESSION_ID = "d02e3e"
+
+
+def _agent_debug_log(hypothesis_id: str, location: str, message: str, data: dict[str, object]) -> None:
+    payload = {
+        "sessionId": _DEBUG_SESSION_ID,
+        "runId": os.getenv("DEBUG_RUN_ID", "initial"),
+        "hypothesisId": hypothesis_id,
+        "location": location,
+        "message": message,
+        "data": data,
+        "timestamp": int(time.time() * 1000),
+    }
+    try:
+        _DEBUG_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with _DEBUG_LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(payload, ensure_ascii=True) + "\n")
+    except Exception:
+        pass
+
 
 def main() -> None:
+    # region agent log
+    _agent_debug_log(
+        "H3",
+        "app/main.py:main:startup",
+        "Bot startup checks begin",
+        {
+            "has_telegram_token": bool(config.TELEGRAM_BOT_TOKEN),
+            "allowed_user_count": len(config.ALLOWED_TELEGRAM_USER_IDS),
+            "has_anthropic_key": bool(config.ANTHROPIC_API_KEY),
+        },
+    )
+    # endregion
     if not config.TELEGRAM_BOT_TOKEN:
         raise SystemExit("Missing TELEGRAM_BOT_TOKEN in environment (.env)")
     if not config.ALLOWED_TELEGRAM_USER_IDS:
